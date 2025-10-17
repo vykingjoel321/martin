@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Martin Studios - Global News Platform</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/6/6f/Globe_icon.svg') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+    }
+    header {
+      background: rgba(0, 0, 0, 0.7);
+      text-align: center;
+      padding: 20px;
+    }
+    nav {
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      padding: 10px;
+    }
+    nav button {
+      padding: 10px 15px;
+      background: #007BFF;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    section {
+      display: none;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.6);
+      margin: 20px;
+      border-radius: 10px;
+    }
+    section.active {
+      display: block;
+    }
+    .auth-box {
+      max-width: 300px;
+      margin: 40px auto;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .auth-box input {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+    .auth-box button {
+      width: 100%;
+      padding: 10px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    .hidden { display: none; }
+    .message { color: lightgreen; text-align: center; margin-top: 10px; }
+    video { max-width: 100%; margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Martin Studios - Global News Platform</h1>
+</header>
+
+<nav id="nav" class="hidden">
+  <button onclick="showPage('news')">News</button>
+  <button onclick="showPage('music')">Music</button>
+  <button onclick="showPage('sports')">Sports</button>
+  <button onclick="showPage('games')">Games</button>
+  <button onclick="showPage('videos')">Videos</button>
+  <button onclick="logout()">Logout</button>
+</nav>
+
+<div id="auth" class="auth-box">
+  <h2 id="authTitle">Sign Up</h2>
+  <input type="text" id="username" placeholder="Username" />
+  <input type="password" id="password" placeholder="Password (min 6 chars)" />
+  <button onclick="submitAuth()">Submit</button>
+  <p class="message" id="authMessage"></p>
+  <p style="text-align:center; margin-top:10px;">
+    <span id="toggleAuth" style="cursor:pointer; color:lightblue;">Already have an account? Log in</span>
+  </p>
+</div>
+
+<section id="news">
+  <h2>World News</h2>
+  <p>Latest international news and headlines...</p>
+</section>
+
+<section id="music">
+  <h2>Music</h2>
+  <p>New releases, trending tracks, artist interviews...</p>
+</section>
+
+<section id="sports">
+  <h2>Sports</h2>
+  <p>Scores, results, highlights from global sports...</p>
+</section>
+
+<section id="games">
+  <h2>Games</h2>
+  <p>Game reviews, upcoming releases, esports news...</p>
+</section>
+
+<section id="videos">
+  <h2>User Videos</h2>
+  <input type="file" id="videoInput" accept="video/*" />
+  <button onclick="uploadVideo()">Upload Video</button>
+  <p id="uploadMessage" class="message"></p>
+  <div id="videoGallery"></div>
+</section>
+
+<script>
+  let isLogin = false;
+
+  const users = JSON.parse(localStorage.getItem('users') || '{}');
+  let currentUser = localStorage.getItem('currentUser');
+
+  const authBox = document.getElementById('auth');
+  const nav = document.getElementById('nav');
+  const authTitle = document.getElementById('authTitle');
+  const toggleAuth = document.getElementById('toggleAuth');
+  const authMessage = document.getElementById('authMessage');
+
+  function showPage(pageId) {
+    document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    if (pageId === 'videos') loadVideos();
+  }
+
+  function submitAuth() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (username.length < 3 || password.length < 6) {
+      authMessage.textContent = 'Invalid username or password.';
+      return;
+    }
+
+    if (isLogin) {
+      if (!users[username] || users[username] !== password) {
+        authMessage.textContent = 'Incorrect login details.';
+        return;
+      }
+      currentUser = username;
+      localStorage.setItem('currentUser', currentUser);
+      enterSite();
+    } else {
+      if (users[username]) {
+        authMessage.textContent = 'Username already exists.';
+        return;
+      }
+      users[username] = password;
+      localStorage.setItem('users', JSON.stringify(users));
+      authMessage.textContent = 'Registered! Now log in.';
+      isLogin = true;
+      toggleAuthMode();
+    }
+  }
+
+  function toggleAuthMode() {
+    isLogin = !isLogin;
+    authTitle.textContent = isLogin ? 'Login' : 'Sign Up';
+    toggleAuth.textContent = isLogin ? 'New user? Sign up' : 'Already have an account? Log in';
+    authMessage.textContent = '';
+  }
+
+  toggleAuth.onclick = toggleAuthMode;
+
+  function enterSite() {
+    authBox.classList.add('hidden');
+    nav.classList.remove('hidden');
+    showPage('news');
+  }
+
+  function logout() {
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+    location.reload();
+  }
+
+  function uploadVideo() {
+    const input = document.getElementById('videoInput');
+    const file = input.files[0];
+    const msg = document.getElementById('uploadMessage');
+    if (!file) {
+      msg.textContent = "Please select a video file.";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const videos = JSON.parse(localStorage.getItem('videos') || '[]');
+      videos.push({ user: currentUser, src: e.target.result });
+      localStorage.setItem('videos', JSON.stringify(videos));
+      msg.textContent = "Video uploaded!";
+      input.value = "";
+      loadVideos();
+    }
+    reader.readAsDataURL(file);
+  }
+
+  function loadVideos() {
+    const gallery = document.getElementById('videoGallery');
+    const videos = JSON.parse(localStorage.getItem('videos') || '[]');
+    if (videos.length === 0) {
+      gallery.innerHTML = "<p>No videos uploaded yet.</p>";
+      return;
+    }
+    gallery.innerHTML = videos.map(v =>
+      `<p><strong>${v.user}</strong></p><video controls src="${v.src}" width="300"></video>`
+    ).join('');
+  }
+
+  // Auto-login if user already signed in
+  if (currentUser) {
+    enterSite();
+  }
+</script>
+
+</body>
+</html>
